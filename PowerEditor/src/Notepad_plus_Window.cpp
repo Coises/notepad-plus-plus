@@ -427,10 +427,10 @@ bool Notepad_plus_Window::isDlgsMsg(MSG *msg) const
 	if (_notepad_plus_plus_core.processFindAccel(msg))
 		return true;
 
-	for (size_t i = 0, len = _notepad_plus_plus_core._hModelessDlgs.size(); i < len; ++i)
+	for (HWND msgAncestor = msg->hwnd; msgAncestor && msgAncestor != _hSelf; msgAncestor = ::GetParent(msgAncestor))
 	{
-		if (::IsDialogMessageW(_notepad_plus_plus_core._hModelessDlgs[i], msg))
-			return true;
+		if (WC_DIALOG == MAKEINTATOM(GetClassLong(msgAncestor, GCW_ATOM))) return ::IsDialogMessage(msgAncestor, msg);
 	}
+
 	return false;
 }
