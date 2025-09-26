@@ -99,7 +99,7 @@ public:
 	BufferID getBufferFromDocument(Document doc);
 
 	void setLoadedBufferEncodingAndEol(Buffer* buf, const Utf8_16_Read& UnicodeConvertor, int encoding, EolType bkformat);
-	bool reloadBuffer(BufferID id);
+	bool reloadBuffer(BufferID id, bool skipDetectEncoding = false);
 	bool reloadBufferDeferred(BufferID id);
 	SavingStatus saveBuffer(BufferID id, const wchar_t* filename, bool isCopy = false);
 	bool backupCurrentBuffer();
@@ -136,7 +136,7 @@ private:
 	FileManager& operator=(FileManager&&) = delete;
 
 	int detectCodepage(char* buf, size_t len);
-	bool loadFileData(Document doc, int64_t fileSize, const wchar_t* filename, char* buffer, Utf8_16_Read* UnicodeConvertor, LoadedFileFormat& fileFormat);
+	bool loadFileData(Document doc, int64_t fileSize, const wchar_t* filename, char* buffer, Utf8_16_Read* UnicodeConvertor, LoadedFileFormat& fileFormat, bool skipDetectEncoding);
 	LangType detectLanguageFromTextBeginning(const unsigned char *data, size_t dataLen);
 
 	Notepad_plus* _pNotepadPlus = nullptr;

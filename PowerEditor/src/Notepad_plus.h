@@ -170,14 +170,14 @@ public:
 	// The following functions apply to a single buffer and don't need to worry about views, with the exception of doClose,
 	// since closing one view doesn't have to mean the document is gone
 	BufferID doOpen(const std::wstring& fileName, bool isRecursive = false, bool isReadOnly = false, int encoding = -1, const wchar_t *backupFileName = NULL, FILETIME fileNameTimestamp = {});
-	bool doReload(BufferID id, bool alert = true);
+	bool doReload(BufferID id, bool alert = true, bool skipDetectEncoding = false);
 	bool doSave(BufferID, const wchar_t * filename, bool isSaveCopy = false);
 	void doClose(BufferID, int whichOne, bool doDeleteBackup = false);
 
 
 	void fileOpen();
 	void fileNew();
-    bool fileReload();
+    bool fileReload(bool skipDetectEncoding = false);
 	bool fileClose(BufferID id = BUFFER_INVALID, int curView = -1);	//use curView to override view to close from
 	bool fileCloseAll(bool doDeleteBackup, bool isSnapshotMode = false);
 	bool fileCloseAllButCurrent();

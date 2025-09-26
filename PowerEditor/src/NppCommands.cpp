@@ -2814,7 +2814,7 @@ void Notepad_plus::command(int id)
 					_pEditView->execute(SCI_SETCODEPAGE, CP_ACP);
 				else
 					buf->setUnicodeMode(um);
-				fileReload();
+				fileReload(true);
 			}
 			else
 			{
@@ -2919,7 +2919,7 @@ void Notepad_plus::command(int id)
             {
 				buf->setEncoding(encoding);
 				buf->setUnicodeMode(uniCookie);
-				fileReload();
+				fileReload(true);
             }
 			break;
 		}

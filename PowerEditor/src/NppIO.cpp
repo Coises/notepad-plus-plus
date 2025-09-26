@@ -552,7 +552,7 @@ BufferID Notepad_plus::doOpen(const wstring& fileName, bool isRecursive, bool is
     return buffer;
 }
 
-bool Notepad_plus::doReload(BufferID id, bool alert)
+bool Notepad_plus::doReload(BufferID id, bool alert, bool skipDetectEncoding)
 {
 	if (alert)
 	{
@@ -591,7 +591,7 @@ bool Notepad_plus::doReload(BufferID id, bool alert)
 		return MainFileManager.reloadBufferDeferred(id);
 	}
 
-	bool res = MainFileManager.reloadBuffer(id);
+	bool res = MainFileManager.reloadBuffer(id, skipDetectEncoding);
 	Buffer * pBuf = MainFileManager.getBufferByID(id);
 	if (mainVisible)
 	{
@@ -2372,11 +2372,11 @@ void Notepad_plus::fileNew()
 }
 
 
-bool Notepad_plus::fileReload()
+bool Notepad_plus::fileReload(bool skipDetectEncoding)
 {
 	assert(_pEditView != nullptr);
 	BufferID buf = _pEditView->getCurrentBufferID();
-	return doReload(buf, buf->isDirty());
+	return doReload(buf, buf->isDirty(), skipDetectEncoding);
 }
 
 

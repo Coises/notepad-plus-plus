@@ -935,7 +935,7 @@ BufferID FileManager::loadFile(const wchar_t* filename, Document doc, int encodi
 	loadedFileFormat._eolFormat = EolType::unknown;
 	loadedFileFormat._language = L_TEXT;
 
-	bool loadRes = loadFileData(doc, fileSize, backupFileName ? backupFileName : fullpath, data, &UnicodeConvertor, loadedFileFormat);
+	bool loadRes = loadFileData(doc, fileSize, backupFileName ? backupFileName : fullpath, data, &UnicodeConvertor, loadedFileFormat, false);
 
 	delete[] data;
 
@@ -988,7 +988,7 @@ BufferID FileManager::loadFile(const wchar_t* filename, Document doc, int encodi
 }
 
 
-bool FileManager::reloadBuffer(BufferID id)
+bool FileManager::reloadBuffer(BufferID id, bool skipDetectEncoding)
 {
 	Buffer* buf = getBufferByID(id);
 	Document doc = buf->getDocument();
@@ -1024,7 +1024,7 @@ bool FileManager::reloadBuffer(BufferID id)
 	char* data = new char[blockSize + 8]; // +8 for incomplete multibyte char
 
 	buf->_canNotify = false;	//disable notify during file load, we don't want dirty status to be triggered
-	bool res = loadFileData(doc, fileSize, buf->getFullPathName(), data, &UnicodeConvertor, loadedFileFormat);
+	bool res = loadFileData(doc, fileSize, buf->getFullPathName(), data, &UnicodeConvertor, loadedFileFormat, skipDetectEncoding);
 	buf->_canNotify = true;
 
 	delete[] data;
@@ -1788,7 +1788,7 @@ LangType FileManager::detectLanguageFromTextBeginning(const unsigned char *data,
 	return L_TEXT;
 }
 
-bool FileManager::loadFileData(Document doc, int64_t fileSize, const wchar_t * filename, char* data, Utf8_16_Read * unicodeConvertor, LoadedFileFormat& fileFormat)
+bool FileManager::loadFileData(Document doc, int64_t fileSize, const wchar_t * filename, char* data, Utf8_16_Read * unicodeConvertor, LoadedFileFormat& fileFormat, bool skipDetectEncoding)
 {
 	// Check file size firstly
 	// size/6 is the normal room Scintilla keeps for editing, but here we limit it to 1MiB when loading (maybe we want to load big files without editing them too much)
@@ -1917,18 +1917,21 @@ bool FileManager::loadFileData(Document doc, int64_t fileSize, const wchar_t * f
             {
 				const NppGUI& nppGui = NppParameters::getInstance().getNppGUI();
 
-				// check if file contain any BOM
-                if (Utf8_16_Read::determineEncoding((unsigned char *)data, lenFile) != uni8Bit)
-                {
-                    // if file contains any BOM, then encoding will be erased,
-                    // and the document will be interpreted as UTF
-					fileFormat._encoding = -1;
-				}
-				else if (fileFormat._encoding == -1)
+				if (!skipDetectEncoding)
 				{
-					if (nppGui._detectEncoding)
-						fileFormat._encoding = detectCodepage(data, lenFile);
-                }
+					// check if file contain any BOM
+					if (Utf8_16_Read::determineEncoding((unsigned char*)data, lenFile) != uni8Bit)
+					{
+						// if file contains any BOM, then encoding will be erased,
+						// and the document will be interpreted as UTF
+						fileFormat._encoding = -1;
+					}
+					else if (fileFormat._encoding == -1)
+					{
+						if (nppGui._detectEncoding)
+							fileFormat._encoding = detectCodepage(data, lenFile);
+					}
+				}
 				
 				bool isLargeFile = fileSize >= nppGui._largeFileRestriction._largeFileSizeDefInByte;
 				if (!isLargeFile && fileFormat._language == L_TEXT)
