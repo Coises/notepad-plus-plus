@@ -1964,19 +1964,8 @@ bool FileManager::loadFileData(Document doc, int64_t fileSize, const wchar_t * f
 				}
 				else if (fileFormat._encoding == -1)
 				{
-					int guessedEncoding = detectCodepage(data, lenFile);
-					if (nppParamInst.isCurrentSystemCodepageUTF8()) // "Beta: Use Unicode UTF-8 for worldwide language support" option is checked in Windows
-					{
-						if (nppGui._detectEncoding && !isAutoDetectEncodingDisabled4Loading)
-							fileFormat._encoding = guessedEncoding == uni8Bit || guessedEncoding == -1 ? nppParamInst.defaultCodepage() : guessedEncoding;
-						else
-							fileFormat._encoding = SC_CP_UTF8;
-					}
-					else
-					{
-						if (nppGui._detectEncoding && !isAutoDetectEncodingDisabled4Loading)
-							fileFormat._encoding = guessedEncoding;
-					}
+					if (nppGui._detectEncoding && !isAutoDetectEncodingDisabled4Loading)
+						fileFormat._encoding = detectCodepage(data, lenFile);
 				}
 
 				isAutoDetectEncodingDisabled4Loading = false;
@@ -2016,10 +2005,27 @@ bool FileManager::loadFileData(Document doc, int64_t fileSize, const wchar_t * f
 			}
 			else //  (fileFormat._encoding == -1) => BOM found
 			{
+				NppParameters& nppParamInst = NppParameters::getInstance();
 				lenConvert = unicodeConvertor->convert(data, lenFile);
-				_pscratchTilla->execute(SCI_APPENDTEXT, lenConvert, reinterpret_cast<LPARAM>(unicodeConvertor->getNewBuf()));
-				if (format == EolType::unknown)
-					format = getEOLFormatForm(unicodeConvertor->getNewBuf(), unicodeConvertor->getNewSize(), EolType::unknown);
+				if (nppParamInst.isCurrentSystemCodepageUTF8() && (unicodeConvertor->getEncoding() == uni8Bit))
+				{
+					// When system code page is UTF8, can't use "ANSI" for legacy code page; we must use the actual code page.
+					WcharMbcsConvertor& wmc = WcharMbcsConvertor::getInstance();
+					int newDataLen = 0;
+					fileFormat._encoding = nppParamInst.defaultCodepage();
+					const char* newData = wmc.encode(fileFormat._encoding, SC_CP_UTF8, data, static_cast<int32_t>(lenFile), &newDataLen, &incompleteMultibyteChar);
+					_pscratchTilla->execute(SCI_APPENDTEXT, newDataLen, reinterpret_cast<LPARAM>(newData));
+					if (format == EolType::unknown)
+						format = getEOLFormatForm(data, lenFile, EolType::unknown);
+				}
+				else
+				{
+					if (nppParamInst.isCurrentSystemCodepageUTF8() && (unicodeConvertor->getEncoding() == uni7Bit))
+						fileFormat._encoding = SC_CP_UTF8;  // When system code page is UTF8 we must use UTF8 for ASCII.
+					_pscratchTilla->execute(SCI_APPENDTEXT, lenConvert, reinterpret_cast<LPARAM>(unicodeConvertor->getNewBuf()));
+					if (format == EolType::unknown)
+						format = getEOLFormatForm(unicodeConvertor->getNewBuf(), unicodeConvertor->getNewSize(), EolType::unknown);
+				}
 			}
 
 			sciStatus = static_cast<int>(_pscratchTilla->execute(SCI_GETSTATUS));
